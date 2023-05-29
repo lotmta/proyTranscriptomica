@@ -1,0 +1,246 @@
+---
+title: "proyTranscriptomica"
+author: "Lot Hernandez"
+---
+
+Librerias
+```{r}
+library(edgeR)
+library(RColorBrewer)
+library(pheatmap)
+library(ggplot2)
+```
+
+Cargamos los datos
+```{r}
+fc = readRDS("../fc.rds")
+```
+
+Creamos nuestros los grupos
+```{r}
+samples = factor(c("KO_fag", "KO_NoFag", "KO_fag", "KO_NoFag", "KO_fag", "KO_NoFag", "WT_fag", "WT_NoFag", "WT_fag", "WT_NoFag", "WT_fag", "WT_NoFag"))
+
+colnames(fc$counts) = c("KO_fag", "KO_NoFag", "KO_fag", "KO_NoFag", "KO_fag", "KO_NoFag", "WT_fag", "WT_NoFag", "WT_fag", "WT_NoFag", "WT_fag", "WT_NoFag")
+```
+
+Cargamos la info al objeto de edgeR
+```{r}
+DGEList_hip_RNA = DGEList(counts=fc$counts, group=samples,
+                          genes=fc$annotation[,c("GeneID","Length")])
+```
+
+Eliminamos genes con baja expresión
+```{r}
+keep = rowSums(cpm(DGEList_hip_RNA)>1) >= 3
+DGEList_hip_RNA = DGEList_hip_RNA[keep,]
+sum(keep)
+```
+
+Creamos la matriz de diseño
+```{r}
+design = model.matrix(~0+samples)
+colnames(design) = levels(samples)
+```
+
+Calculamos los niveles de normalización y dispersión
+```{r}
+DGEList_hip_RNA = calcNormFactors(DGEList_hip_RNA)
+DGEList_hip_RNA = estimateDisp(DGEList_hip_RNA, design=design)
+```
+
+# Visualizacion temprana, PCA/MDS
+## MDS
+Podemos hacer un PCA/MDS para ver como se agrupan, para darnos una idea de si hay algo mal con los datos
+Primero se llevara a cabo un MDS
+```{r}
+color_all = c("#f77f00","#d62828","#f77f00","#d62828","#f77f00","#d62828","#00b4d8","#0077b6","#00b4d8","#0077b6","#00b4d8","#0077b6")
+plotMDS(DGEList_hip_RNA, cex=1, col=color_all)
+```
+Se ve que los datos se agrupan junto a los de su tipo, por lo que no podemos decir que haya alguna muestra obvia de que hay algo mal con ellos
+
+# PCA
+Scree plot, para visualizar la importancia de cada componente
+```{r}
+PCA_log2CPM = prcomp(t(cpm(DGEList_hip_RNA, log=T)), center=T, scale=T)
+PCA_perc_var = round ( ((PCA_log2CPM$sdev^2 /sum(PCA_log2CPM$sdev^2))*100), 1)
+
+color_range <- colorRampPalette(c("#d62828", "#FED4CC"))
+
+
+barplot(PCA_perc_var, names=colnames(PCA_log2CPM$x), main="Scree plot RNAseq", 
+        col = color_range(11) ,xlab="Principal components", 
+        ylab="Percent Variation")
+
+```
+Los componentes no parecen tener mucha fuerza, puede que se deba a que tenemos 4 grupos, pero tambien señala a que estos tal vez no se diferencien mucho
+
+
+Comparamos el PC1 con el PC2
+```{r}
+PCA_var_lab = c(paste("PC1 - ", PCA_perc_var[1], "% var.", sep=""),
+                paste("PC2 - ", PCA_perc_var[2], "% var.", sep=""))
+
+plot(PCA_log2CPM$x[,"PC1"], PCA_log2CPM$x[,"PC2"], 
+     main="PCA",
+     xlab=PCA_var_lab[1], ylab=PCA_var_lab[2], 
+     col=color_all, pch=19)
+
+legend(-145,70, legend = c("KO_fag", "KO_NoFag", "WT_fag", "WT_NoFag"), 
+       pch=19, col=c("#f77f00","#d62828","#00b4d8","#0077b6"), cex=0.7)
+
+```
+Se asimila bastante al MDS, solo que en este se puede ver que tal vez tenemos outliers en los datos, esos 2 WT_fag que estan muy separados de los demas
+
+
+# Analisis de genes diferencialmente expresados
+
+Calculamos los genes diferencialmente expresados
+```{r}
+# Usamos modelaje glm y generamos los contrastes
+fit <- glmFit(DGEList_hip_RNA, design)
+
+# Como tenemos 4 grupos, se haran 2 contrastes tomando en cuenta que el enfoque del estudio es ver el efecto de KO en Ifngr1
+contrasts <- makeContrasts(
+  WT_fagvsKO_fag = WT_fag - KO_fag,
+  WT_NoFagvsKO_NoFag = WT_NoFag - KO_NoFag,
+  levels = design)
+
+# Lista con los resultados de la prueba estadística
+lrt_hip <- glmLRT(fit, contrast = contrasts)
+# data frame con los genes diferencialmente expresados
+DEG_lrt <- as.data.frame(topTags(lrt_hip, n=length(DGEList_hip_RNA$counts[,1])))
+```
+
+
+# Volcano Plot
+## Wt vs KO, fagociticos 
+```{r}
+# Tabla con genes regulados positivamente
+up = (DEG_lrt$logFC.WT_fagvsKO_fag > 1) & (DEG_lrt$FDR < 1e-5)
+write.table(DEG_lrt[up,], "WT_fagvsKO_fag_UP-1e-5.txt", sep="\t",
+            quote=FALSE,row.names=FALSE)
+
+# Tabla con genes regulados negativamente
+down = (DEG_lrt$logFC.WT_fagvsKO_fag < -1) & (DEG_lrt$FDR < 1e-5)
+write.table(DEG_lrt[down,], "WT_fagvsKO_fag_Down-1e-5.txt", sep="\t",
+            quote=FALSE, row.names=FALSE)
+```
+
+```{r}
+plot(DEG_lrt$logFC.WT_fagvsKO_fag[!(up | down)], - log10(DEG_lrt$FDR[!(up | down)]),
+     pch=19, col="gray", cex=0.4, xlab="log2 Expression fold change", 
+     ylab="-log10 FDR", main="Volcano plot WTvsKO, Fagociticas", xlim=c(-10,10),ylim=c(0,30))
+
+points(DEG_lrt$logFC.WT_fagvsKO_fag[up], - log10(DEG_lrt$FDR[up]), pch=19, col="red", cex=0.4)
+points(DEG_lrt$logFC.WT_fagvsKO_fag[down], - log10(DEG_lrt$FDR[down]), pch=19, col="blue", cex=0.4)
+abline(h=5, col="black", lty=3)
+abline(v=c(-1,1), col="black", lty=3)
+
+```
+
+
+## Wt vs KO, No_Fagociticos 
+```{r}
+# Tabla con genes regulados positivamente
+up = (DEG_lrt$logFC.WT_NoFagvsKO_NoFag > 1) & (DEG_lrt$FDR < 1e-5)
+write.table(DEG_lrt[up,], "WT_NoFagvsKO_NoFag_Up-1e-5.txt", sep="\t",
+            quote=FALSE,row.names=FALSE)
+
+# Tabla con genes regulados negativamente
+down = (DEG_lrt$logFC.WT_NoFagvsKO_NoFag < -1) & (DEG_lrt$FDR < 1e-5)
+write.table(DEG_lrt[down,], "WT_NoFagvsKO_NoFag_Down-1e-5.txt", sep="\t",
+            quote=FALSE, row.names=FALSE)
+```
+
+```{r}
+plot(DEG_lrt$logFC.WT_NoFagvsKO_NoFag[!(up | down)], - log10(DEG_lrt$FDR[!(up | down)]),
+     pch=19, col="gray", cex=0.4, xlab="log2 Expression fold change", 
+     ylab="-log10 FDR", main="Volcano plot WTvsKO, No Fagociticas", xlim=c(-10,10),ylim=c(0,30))
+
+points(DEG_lrt$logFC.WT_NoFagvsKO_NoFag[up], - log10(DEG_lrt$FDR[up]), pch=19, col="red", cex=0.4)
+points(DEG_lrt$logFC.WT_NoFagvsKO_NoFag[down], - log10(DEG_lrt$FDR[down]), pch=19, col="blue", cex=0.4)
+abline(h=5, col="black", lty=3)
+abline(v=c(-1,1), col="black", lty=3)
+
+```
+
+
+# Heatmap
+
+```{r}
+# quitamos genes con pvalue mayor a 0.05
+DEG_lrt = DEG_lrt[DEG_lrt$PValue < 0.05,]
+
+# nuestra lista con logFC tiene orden diferente de genes que la que tiene los counts, por lo que las ordenamos
+Ordered_DEG = DEG_lrt[match(rownames(DGEList_hip_RNA$counts), DEG_lrt$GeneID), ]
+# cambiamos el logFC a valor absoluto y lo pasamos a negativo para poder usar rank y obtener aquellos genes donde se vio mas diferencia, específicamente en WT_fag vs KO_fag 
+Ordered_DEG$logFC.WT_fagvsKO_fag = abs(Ordered_DEG$logFC.WT_fagvsKO_fag) * -1
+
+# Filtramos para quedarnos con los 50 genes con mayor cambio de expresión entre los grupos
+exprs_heatmap = DGEList_hip_RNA$counts[rank(Ordered_DEG$logFC.WT_fagvsKO_fag) <= 50, ]
+# cambiamos el orden de columnas para mejorar visualización, se juntan los del mismo grupo
+ordr_exprs_heatmap = exprs_heatmap[,c(3,5,1,7,9,11,2,4,6,8,10,12)]
+
+# generamos el heatmap
+pheatmap(
+    ordr_exprs_heatmap,
+    cluster_rows = TRUE,
+    cluster_cols = FALSE,
+    show_rownames = FALSE,
+    show_colnames = TRUE,
+)
+
+```
+
+# Analisis de Ontologia de Genes
+## Librerias
+```{r}
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("clusterProfiler")
+
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("AnnotationDbi")
+
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("org.Mm.eg.db")
+```
+
+```{r}
+library(clusterProfiler)
+library(org.Mm.eg.db)
+library(AnnotationDbi)
+```
+
+## Busqueda de nuestros genes
+```{r}
+# Buscamos con el codigo ENSEMBL de nuestros genes los procesos biologicos en los que pueden estar involucrados
+GO_results = enrichGO(gene = rownames(exprs_heatmap), OrgDb = org.Mm.eg.db, keyType = "ENSEMBL", ont = "BP")
+
+plot(barplot(GO_results, showCategory = 12, font.size = 7, title = 'Procesos Biologicos'))
+```
+
+
+```{r}
+# Ahora buscamos con función molecular
+GO_resultsMF = enrichGO(gene = rownames(exprs_heatmap), OrgDb = org.Mm.eg.db, keyType = "ENSEMBL", ont = "MF")
+
+plot(barplot(GO_resultsMF, showCategory = 12, font.size = 7, title = 'Función Molecular'))
+```
+
+```{r}
+# Y con Componente celular
+GO_resultsCC = enrichGO(gene = rownames(exprs_heatmap), OrgDb = org.Mm.eg.db, keyType = "ENSEMBL", ont = "CC")
+
+plot(barplot(GO_resultsCC, showCategory = 12, font.size = 7, title = 'Componente Celular'))
+```
+
+
+
+
+

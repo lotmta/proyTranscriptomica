@@ -1,0 +1,3 @@
+"0","samples = factor(c(""KO_fag"", ""KO_NoFag"", ""KO_fag"", ""KO_NoFag"", ""KO_fag"", ""KO_NoFag"", ""WT_fag"", ""WT_NoFag"", ""WT_fag"", ""WT_NoFag"", ""WT_fag"", ""WT_NoFag""))"
+"0",""
+"0","colnames(fc$counts) = c(""KO_fag"", ""KO_NoFag"", ""KO_fag"", ""KO_NoFag"", ""KO_fag"", ""KO_NoFag"", ""WT_fag"", ""WT_NoFag"", ""WT_fag"", ""WT_NoFag"", ""WT_fag"", ""WT_NoFag"")"

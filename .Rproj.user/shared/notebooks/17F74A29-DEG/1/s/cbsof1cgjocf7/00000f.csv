@@ -1,0 +1,2 @@
+"0","DGEList_hip_RNA = calcNormFactors(DGEList_hip_RNA)"
+"0","DGEList_hip_RNA = estimateDisp(DGEList_hip_RNA, design=design)"

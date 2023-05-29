@@ -13,7 +13,7 @@ library(ggplot2)
 
 Cargamos los datos
 ```{r}
-fc = readRDS("fc.rds")
+fc = readRDS("../fc.rds")
 ```
 
 Creamos nuestros los grupos
@@ -28,6 +28,7 @@ Cargamos la info al objeto de edgeR
 DGEList_hip_RNA = DGEList(counts=fc$counts, group=samples,
                           genes=fc$annotation[,c("GeneID","Length")])
 ```
+
 Eliminamos genes con baja expresión
 ```{r}
 keep = rowSums(cpm(DGEList_hip_RNA)>1) >= 3
@@ -116,12 +117,12 @@ DEG_lrt <- as.data.frame(topTags(lrt_hip, n=length(DGEList_hip_RNA$counts[,1])))
 ```{r}
 # Tabla con genes regulados positivamente
 up = (DEG_lrt$logFC.WT_fagvsKO_fag > 1) & (DEG_lrt$FDR < 1e-5)
-write.table(DEG_lrt[up,], "edgeR-DEG-WTvsKOUp-1e-2.txt", sep="\t",
+write.table(DEG_lrt[up,], "WT_fagvsKO_fag_UP-1e-5.txt", sep="\t",
             quote=FALSE,row.names=FALSE)
 
 # Tabla con genes regulados negativamente
 down = (DEG_lrt$logFC.WT_fagvsKO_fag < -1) & (DEG_lrt$FDR < 1e-5)
-write.table(DEG_lrt[down,], "edgeR-DEG-WTvsKODown-1e-2.txt", sep="\t",
+write.table(DEG_lrt[down,], "WT_fagvsKO_fag_Down-1e-5.txt", sep="\t",
             quote=FALSE, row.names=FALSE)
 ```
 
@@ -142,12 +143,12 @@ abline(v=c(-1,1), col="black", lty=3)
 ```{r}
 # Tabla con genes regulados positivamente
 up = (DEG_lrt$logFC.WT_NoFagvsKO_NoFag > 1) & (DEG_lrt$FDR < 1e-5)
-write.table(DEG_lrt[up,], "edgeR-DEG-WTvsKOUp-1e-2.txt", sep="\t",
+write.table(DEG_lrt[up,], "WT_NoFagvsKO_NoFag_Up-1e-5.txt", sep="\t",
             quote=FALSE,row.names=FALSE)
 
 # Tabla con genes regulados negativamente
 down = (DEG_lrt$logFC.WT_NoFagvsKO_NoFag < -1) & (DEG_lrt$FDR < 1e-5)
-write.table(DEG_lrt[down,], "edgeR-DEG-WTvsKODown-1e-2.txt", sep="\t",
+write.table(DEG_lrt[down,], "WT_NoFagvsKO_NoFag_Down-1e-5.txt", sep="\t",
             quote=FALSE, row.names=FALSE)
 ```
 
@@ -161,27 +162,6 @@ points(DEG_lrt$logFC.WT_NoFagvsKO_NoFag[down], - log10(DEG_lrt$FDR[down]), pch=1
 abline(h=5, col="black", lty=3)
 abline(v=c(-1,1), col="black", lty=3)
 
-```
-
-Calcular el RPKM/FPKM y el TPM
-( Reads Per Kilobase Million )
-( Fragments Per Kilobase Million )
-( Transcripts Per Kilobase Million )
-```{r}
-# Conseguimos el log2 FPKM
-log2_fpkm_hip_RNA = rpkm(DGEList_hip_RNA, DGEList_hip_RNA$genes$Length, log=T)
-log2_fpkm_hip_RNA_average = rpkmByGroup(DGEList_hip_RNA, log=T)
-
-# Creamos una funcion para sacar el log TPM del log FPKM 
-fpkm2tpm_log2 <- function(fpkm) { fpkm - log2(sum(2^fpkm)) + log2(1e6) }
-
-log2_tpm_hip_RNA = apply(log2_fpkm_hip_RNA, 2, fpkm2tpm_log2)
-
-log2_tpm_hip_RNA_average = apply(log2_fpkm_hip_RNA_average, 2, fpkm2tpm_log2)
-
-write.table(log2_tpm_hip_RNA, "mm10-RNA-hipTPM_log2.txt", sep="\t", quote=FALSE)
-
-write.table(log2_tpm_hip_RNA_average, "mm10-RNA-hip-TPM_log2-average.txt", sep="\t", quote=FALSE)
 ```
 
 

@@ -1,0 +1,7 @@
+"0","keep = rowSums(cpm(DGEList_hip_RNA)>1) >= 3"
+"0","DGEList_hip_RNA = DGEList_hip_RNA[keep,]"
+"0","sum(keep)"
+"1","[1]"
+"1"," 19060"
+"1","
+"

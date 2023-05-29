@@ -1,0 +1,3 @@
+"0","plot(DEG_lrt$logFC.WT_NoFagvsKO_NoFag[!(up | down)], - log10(DEG_lrt$FDR[!(up | down)]),"
+"0","     pch=19, col=""gray"", cex=0.4, xlab=""log2 Expression fold change"", "
+"0","     ylab=""-log10 FDR"", main=""Volcano plot WTvsKO, No Fagociticas"", xlim=c(-10,10),ylim=c(0,30))"
