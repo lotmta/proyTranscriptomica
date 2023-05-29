@@ -1,0 +1,7 @@
+"0","PCA_var_lab = c(paste(""PC1 - "", PCA_perc_var[1], ""% var."", sep=""""),"
+"0","                paste(""PC2 - "", PCA_perc_var[2], ""% var."", sep=""""))"
+"0",""
+"0","plot(PCA_log2CPM$x[,""PC1""], PCA_log2CPM$x[,""PC2""], "
+"0","     main=""PCA"","
+"0","     xlab=PCA_var_lab[1], ylab=PCA_var_lab[2], "
+"0","     col=color_all, pch=19)"

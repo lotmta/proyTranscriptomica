@@ -1,0 +1,220 @@
+---
+title: "DGE_edgeR"
+author: "Lot Hernandez"
+output: html_document
+---
+
+Librerias
+```{r}
+library(Rsubread)
+library(edgeR)
+```
+
+# Generamos nuestra lista de genes
+
+
+Conseguimos la tabla de Counts
+```{r}
+
+bfiles = c("file.bam")
+
+fc <- featureCounts(files=bfiles,
+    annot.ext="/export/storage/users/dvalle/indexes/mm10-ensembl_99-genes.gtf",
+    isGTFAnnotationFile = T,  useMetaFeatures = T, minMQS = 10, largestOverlap = T,
+    isPairedEnd = T, requireBothEndsMapped = T, nthreads = 5)
+```
+
+
+Cargamos la info al objeto de edgeR
+```{r}
+
+samples <- factor(c("WT", "WT", "WT", "KO", "KO", "KO"))
+
+# Cargamos los datos
+DGEList_hip_RNA = DGEList(counts=fc$counts, group=samples, 
+                          genes=fc$annotation[,c("GeneID","Length")])
+
+```
+
+
+Eliminamos genes con baja expresion
+```{r}
+
+keep = rowSums(cpm(DGEList_hip_RNA)>1) >= 3
+sum(keep)
+
+DGEList_hip_RNA = DGEList_hip_RNA[keep,]
+```
+
+
+Creamos la matriz de diseño
+```{r}
+
+design <- model.matrix(~0+samples)
+
+colnames(design) <- levels(samples)
+
+```
+
+
+Calculamos los niveles de normalización y dispersión
+```{r}
+
+DGEList_hip_RNA = calcNormFactors(DGEList_hip_RNA)
+
+DGEList_hip_RNA = estimateDisp(DGEList_hip_RNA, design=design)
+
+```
+
+
+# Visualizacion temprana, PCA/MDS
+
+
+Podemos hacer un PCA/MDS para ver como se agrupan, para darnos una idea de si hay algo mal con los datos
+```{r}
+
+color_all = c("blue","blue","blue","red","red","red")
+
+#Se hace un MDS
+plotMDS(DGEList_hip_RNA, cex=0.8, col=color_all)
+
+dev.copy(pdf,"MDS-hip_RNA-names.pdf")
+dev.off()
+```
+PCA preserva covarianza, MDS preserva distancia entre puntos de datos
+
+
+Para hacer un PCA "a mano" (DESeq tiene una funcion para hacerlo)
+```{r}
+
+PCA_log2CPM = prcomp(t(cpm(DGEList_hip_RNA, log=T)), center=T, scale=T)
+summary( PCA_log2CPM )
+
+```
+
+
+Scree plot, para visualizar la importancia de cada componente
+```{r}
+
+PCA_perc_var = round ( ((PCA_log2CPM$sdev^2 / sum(PCA_log2CPM$sdev^2))*100), 1)
+
+barplot(PCA_perc_var, names=colnames(PCA_log2CPM$x), 
+        main="Scree plot RNAseq hippocampus", xlab="Principal components", 
+        ylab="Percent Variation")
+
+dev.copy(pdf,"Scree_plot-log2CPM-hip_RNA.pdf")
+dev.off()
+
+```
+
+
+Comparamos el PC1 con el PC2
+```{r}
+PCA_var_lab = c(paste("PC1 - ", PCA_perc_var[1], "% var.", sep=""), 
+                ("PC2 - ", PCA_perc_var[2], "% var.", sep=""))
+
+plot(PCA_log2CPM$x[,"PC1"], PCA_log2CPM$x[,"PC2"], 
+     main="PCA of RNAseq from hippocampus",
+     xlab=PCA_var_lab[1], ylab=PCA_var_lab[2], 
+     col=color_all, pch=19)
+
+legend(60,-35, legend = c("WT","KO","5xFAD","KO_5xFAD"), 
+       pch=19, col=color_samples, cex=0.7)
+
+dev.copy(pdf,"PCA-log2CPM-hip_RNA.pdf")
+devoff()
+```
+
+
+# Analisis de genes diferencialmente expresados
+
+
+Calculamos los genes diferencialmente expresados
+```{r}
+
+# Usamos modelaje glm y generamos los contrastes
+fit <- glmFit(DGEList_hip_RNA, design)
+contrasts <- makeContrasts(WTvsKO=KO-WT, levels=design)
+
+# Lista con los resultados de la prueba estadistica
+lrt_hip <- glmLRT(fit, contrast=contrasts[, "WTvsKO"])
+
+# data frame con los genes diferencialmente expresados
+DEG_lrt <- as.data.frame(topTags(lrt_hip, n=length(DGEList_hip_RNA$counts[,1])))
+```
+
+
+Los guardamos con los parametros queridos
+```{r}
+
+# Tabla con genes upregulated (comparando WT vs KO)
+up = (DEG_lrt$logFC > 1) & (DEG_lrt$FDR < 1e2)
+write.table(DEG_lrt[up,], "edgeR-DEG-WTvsKOUp-1e-2.txt", sep="\t",
+            quote=FALSE,row.names=FALSE)
+
+# Tabla con genes downregulated
+down = (DEG_lrt$logFC < -1) & (DEG_lrt$FDR < 1e-2)
+write.table(DEG_lrt[down,], "edgeR-DEG-WTvsKODown-1e-2.txt", sep="\t",
+            quote=FALSE, row.names=FALSE)
+
+```
+
+
+Volcano plot
+```{r}
+
+plot(DEG_lrt$logFC[!(up | down)], - log10(DEG_lrt$FDR[!(up | down)]), 
+     pch=19, col="gray", cex=0.4, xlab="log2 Expression fold change", 
+     ylab="-log10 FDR", main="Volcano plot WTvsKO", 
+     xlim=c(-10,10),ylim=c(0,30))
+
+points(DEG_lrt$logFC[up], - log10(DEG_lrt$FDR[up]), pch=19, col="red", cex=0.4)
+points(DEG_lrt$logFC[down], - log10(DEG_lrt$FDR[down]), pch=19, col="blue", cex=0.4)
+abline(h=5, col="black", lty=3)
+abline(v=c(-1,1), col="black", lty=3)
+
+dev.copy(pdf, "Volcano_plot-RNA_seqWTvsKO.pdf")
+dev.off()
+
+```
+
+
+Calcular el RPKM/FPKM y el TPM
+( Reads Per Kilobase Million )
+( Fragments Per Kilobase Million )
+( Transcripts Per Kilobase Million )
+```{r}
+
+# Conseguimos el log2 FPKM
+log2_fpkm_hip_RNA = rpkm(DGEList_hip_RNA, DGEList_hip_RNA$genes$Length, log=T)
+log2_fpkm_hip_RNA_average = rpkmByGroup(DGEList_hip_RNA, log=T)
+
+
+# Creamos una funcion para sacar el log TPM del log FPKM 
+fpkm2tpm_log2 <- function(fpkm) { fpkm - log2(sum(2^fpkm)) + log2(1e6) }
+
+log2_tpm_hip_RNA = apply(log2_fpkm_hip_RNA, 2, fpkm2tpm_log2)
+
+log2_tpm_hip_RNA_average = apply(log2_fpkm_hip_RNA_average, 2, fpkm2tpm_log2)
+
+write.table(log2_tpm_hip_RNA, "mm10-RNA-hipTPM_log2.txt", sep="\t", quote=FALSE)
+
+write.table(log2_tpm_hip_RNA_average, "mm10-RNA-hip-TPM_log2-average.txt", sep="\t", quote=FALSE)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

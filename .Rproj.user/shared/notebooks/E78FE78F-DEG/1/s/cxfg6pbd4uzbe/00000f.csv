@@ -1,0 +1,2 @@
+"0","design = model.matrix(~0+samples)"
+"0","colnames(design) = levels(samples)"

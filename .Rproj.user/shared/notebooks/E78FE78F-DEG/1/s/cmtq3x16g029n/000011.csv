@@ -1,0 +1,5 @@
+"0","DGEList_hip_RNA = DGEList(counts=fc$counts, group=samples,
+                          genes=fc$annotation[,c(""GeneID"",""Length"")])
+"
+"2","Repeated column names found in count matrix
+"

@@ -1,0 +1,84 @@
+"1","
+"
+"1","  Binaries will be installed
+"
+"2","trying URL 'https://cran.rstudio.com/bin/windows/contrib/4.2/cli_3.6.1.zip'
+"
+"2","Content type 'application/zip'"
+"2"," length 1332122 bytes (1.3 MB)
+"
+"2","downloaded 1.3 MB
+
+"
+"2","trying URL 'https://bioconductor.org/packages/3.16/bioc/bin/windows/contrib/4.2/DelayedArray_0.23.2.zip'
+"
+"2","Content type 'application/zip'"
+"2"," length 2449113 bytes (2.3 MB)
+"
+"2","downloaded 2.3 MB
+
+"
+"2","trying URL 'https://cran.rstudio.com/bin/windows/contrib/4.2/htmltools_0.5.5.zip'
+"
+"2","Content type 'application/zip'"
+"2"," length 351501 bytes (343 KB)
+"
+"2","downloaded 343 KB
+
+"
+"2","trying URL 'https://cran.rstudio.com/bin/windows/contrib/4.2/RcppArmadillo_0.12.2.0.0.zip'
+"
+"2","Content type 'application/zip'"
+"2"," length 1981442 bytes (1.9 MB)
+"
+"2","downloaded 1.9 MB
+
+"
+"2","trying URL 'https://cran.rstudio.com/bin/windows/contrib/4.2/rlang_1.1.1.zip'
+"
+"2","Content type 'application/zip'"
+"2"," length 1568270 bytes (1.5 MB)
+"
+"2","downloaded 1.5 MB
+
+"
+"2","trying URL 'https://cran.rstudio.com/bin/windows/contrib/4.2/xfun_0.39.zip'
+"
+"2","Content type 'application/zip'"
+"2"," length 426015 bytes (416 KB)
+"
+"2","downloaded 416 KB
+
+"
+"1","package ‘cli’ successfully unpacked and MD5 sums checked
+"
+"2","Warning: cannot remove prior installation of package ‘cli’"
+"2","Warning: problem copying C:\Users\cerot\AppData\Local\R\win-library\4.2\00LOCK\cli\libs\x64\cli.dll to C:\Users\cerot\AppData\Local\R\win-library\4.2\cli\libs\x64\cli.dll: Permission denied"
+"2","Warning: restored ‘cli’"
+"1","package ‘DelayedArray’ successfully unpacked and MD5 sums checked
+"
+"1","package ‘htmltools’ successfully unpacked and MD5 sums checked
+"
+"2","Warning: cannot remove prior installation of package ‘htmltools’"
+"2","Warning: problem copying C:\Users\cerot\AppData\Local\R\win-library\4.2\00LOCK\htmltools\libs\x64\htmltools.dll to C:\Users\cerot\AppData\Local\R\win-library\4.2\htmltools\libs\x64\htmltools.dll: Permission denied"
+"2","Warning: restored ‘htmltools’"
+"1","package ‘RcppArmadillo’ successfully unpacked and MD5 sums checked
+"
+"1","package ‘rlang’ successfully unpacked and MD5 sums checked
+"
+"2","Warning: cannot remove prior installation of package ‘rlang’"
+"2","Warning: problem copying C:\Users\cerot\AppData\Local\R\win-library\4.2\00LOCK\rlang\libs\x64\rlang.dll to C:\Users\cerot\AppData\Local\R\win-library\4.2\rlang\libs\x64\rlang.dll: Permission denied"
+"2","Warning: restored ‘rlang’"
+"1","package ‘xfun’ successfully unpacked and MD5 sums checked
+"
+"2","Warning: cannot remove prior installation of package ‘xfun’"
+"2","Warning: problem copying C:\Users\cerot\AppData\Local\R\win-library\4.2\00LOCK\xfun\libs\x64\xfun.dll to C:\Users\cerot\AppData\Local\R\win-library\4.2\xfun\libs\x64\xfun.dll: Permission denied"
+"2","Warning: restored ‘xfun’"
+"1","
+"
+"1",""
+"1","The downloaded binary packages are in
+	C:\Users\cerot\AppData\Local\Temp\RtmpohF06m\downloaded_packages"
+"1",""
+"1","
+"

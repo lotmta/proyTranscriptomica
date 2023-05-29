@@ -1,0 +1,1 @@
+{"frames":[],"message":"Error: unexpected ')' in \"colnames(fc$counts) = c(\"KO_fag\", \"KO_NoFag\", \"KO_fag\", \"KO_NoFag\", \"KO_fag\", \"KO_NoFag\", \"WT_fag\", \"WT_NoFag\", \"WT_fag\", \"WT_NoFag\", \"WT_fag\", \"WT_NoFag\"))\"\n"}
